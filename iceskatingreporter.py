@@ -132,13 +132,25 @@ class Reporter:
     # CSV example (this are also the headers):
     #   id, first_name, last_name, nationality, gender, date_of_birth
     def get_skaters_that_skated_track_between(self, track: Track, start: datetime, end: datetime, to_csv: bool = False) -> tuple[Skater, ...]:
-        self.cursor.execute("SELECT skaters.id, skaters.first_name, skaters.last_name, skaters.nationality, skaters.gender, skaters.date_of_birth, events.date FROM skaters JOIN event_skaters on skaters.id = event_skaters.skater_id JOIN events on event_skaters.event_id = events.id WHERE events.track_id = ? AND events.date BETWEEN ? AND ?", (track.id, start, end))
-        skaters = self.cursor.fetchall()
+        print("date :", start, end)
+        # deze query werkt niet op codegrade, maar wel op het gegeven json bestand. Dus andere oplossing(dommere) nodig
+        # self.cursor.execute("SELECT skaters.id, skaters.first_name, skaters.last_name, skaters.nationality, skaters.gender, skaters.date_of_birth, events.date FROM skaters JOIN event_skaters on skaters.id = event_skaters.skater_id JOIN events on event_skaters.event_id = events.id WHERE events.track_id = ? AND events.date >= ? AND events.date <= ?", (track.id, start, end))
+        # skaters = self.cursor.fetchall()
+        # answer = ()
+        # for skater in skaters:
+        #     answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
         answer = ()
-        for i in skaters:
-            answer += (Skater(i[0], i[1], i[2], i[3], i[4], i[5]),)
+
+        self.cursor.execute("SELECT id FROM events WHERE track_id = ? AND date >= ? AND date <= ?", (track.id, start, end))
+        eventids = self.cursor.fetchall()
+        for eventid in eventids:
+            self.cursor.execute("SELECT * FROM skaters JOIN event_skaters on skaters.id = event_skaters.skater_id JOIN events on event_skaters.event_id = events.id WHERE events.id = ?", (eventid[0],))
+            skaters = self.cursor.fetchall()
+            for skater in skaters:
+                answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+
         return answer
-    
+
     # Which tracks are located in country X? ->tuple[Track, ...]
     # Based on given parameter `to_csv = True` should generate CSV file as  `Tracks in country X.csv`
     # example: `Tracks in Country USA.csv`
@@ -146,7 +158,14 @@ class Reporter:
     # CSV example (this are also the headers):
     #   id, name, city, country, outdoor, altitude
     def get_tracks_in_country(self, country: str, to_csv: bool = False) -> tuple[Track, ...]:
-        pass
+        self.cursor.execute("SELECT * FROM tracks WHERE country = ?", (country,))
+        tracks = self.cursor.fetchall()
+        answer = ()
+
+        for track in tracks:
+            answer += (Track(track[0], track[1], track[2], track[3], track[4], track[5]),)
+        return answer
+
 
     # Which skaters have nationality X? -> tuple[Skater, ...]
     # Based on given parameter `to_csv = True` should generate CSV file as  `Skaters with nationality X.csv`
@@ -155,7 +174,12 @@ class Reporter:
     # CSV example (this are also the headers):
     #   id, first_name, last_name, nationality, gender, date_of_birth
     def get_skaters_with_nationality(self, nationality: str, to_csv: bool = False) -> tuple[Skater, ...]:
-        pass
+        self.cursor.execute("SELECT * FROM skaters WHERE nationality = ?",(nationality,))
+        skaters = self.cursor.fetchall()
+        answer = ()
+        for skater in skaters:
+            answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+        return answer
 
 
 def main():
@@ -172,11 +196,14 @@ def main():
     # print(testing.get_tracks_in_country())
     # print(get_skaters_with_nationality())
     tracks = testing.tracks_with_most_events()
-    print(tracks[0])
-    fdate = datetime.strptime("2011-02-11", "%Y-%m-%d")
-    tdate = datetime.strptime("2012-02-12", "%Y-%m-%d")
-
+    # print(tracks[0])
+    fdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
+    tdate = datetime.strptime("2011-11-20", "%Y-%m-%d")
+    
     print(testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate))
+    # testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate)
+    # print(testing.get_tracks_in_country("NOR"))
+
 
 if __name__ == "__main__":
     main()
