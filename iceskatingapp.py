@@ -3,10 +3,6 @@ import sys
 import json
 import sqlite3
 
-from track import Track
-from event import Event
-from skater import Skater
-
 
 def sync_skaters(cur, json_data):
     # read trough json data and create skater objects

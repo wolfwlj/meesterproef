@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import sys
 import sqlite3
+import csv
 
 
 class Reporter:
@@ -164,6 +165,19 @@ class Reporter:
 
         for track in tracks:
             answer += (Track(track[0], track[1], track[2], track[3], track[4], track[5]),)
+
+        if not to_csv:
+            return answer
+        filename = f"Tracks in country {country}.csv"
+
+        with open(f"{filename}", 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            
+            writer.writerow(['id', 'name', 'city', 'country', 'outdoor', 'altitude'])
+            for track in tracks:
+                writer.writerow([track[0], track[1], track[2], track[3], track[4], track[5]])
+
         return answer
 
 
@@ -179,6 +193,19 @@ class Reporter:
         answer = ()
         for skater in skaters:
             answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+
+        if not to_csv:
+            return answer
+        filename = f"Skaters with nationality {nationality}.csv"
+
+        with open(f"{filename}", 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            
+            writer.writerow(['id', 'first_name', 'last_name', 'nationality', 'gender', 'date_of_birth'])
+            for skater in skaters:
+                writer.writerow([skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]])
+
         return answer
 
 
@@ -193,14 +220,14 @@ def main():
     # print(testing.get_first_event())
     # print(testing.get_latest_event())
     # print(testing.get_skaters_that_skated_track_between())
-    # print(testing.get_tracks_in_country())
-    # print(get_skaters_with_nationality())
-    tracks = testing.tracks_with_most_events()
-    # print(tracks[0])
-    fdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
-    tdate = datetime.strptime("2011-11-20", "%Y-%m-%d")
+    print(testing.get_tracks_in_country("NOR", True))
+    # print(testing.get_skaters_with_nationality("SWE", True))
+    # tracks = testing.tracks_with_most_events()
+    # # print(tracks[0])
+    # fdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
+    # tdate = datetime.strptime("2011-11-20", "%Y-%m-%d")
     
-    print(testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate))
+    # print(testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate))
     # testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate)
     # print(testing.get_tracks_in_country("NOR"))
 

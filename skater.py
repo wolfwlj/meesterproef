@@ -14,7 +14,7 @@ class Skater:
         self.last_name = last_name
         self.nationality = nationality
         self.gender = gender
-        self.date_of_birth = date_of_birth
+        self.date_of_birth = datetime.strptime(date_of_birth, "%Y-%m-%d")
         
     def get_age(self, date: date = datetime.now()) -> int:
         # return the age of the skater in years.
