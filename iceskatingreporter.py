@@ -16,7 +16,7 @@ class Reporter:
     # How many skaters are there? -> int
     def total_amount_of_skaters(self) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM skaters")
-        return self.cursor.fetchone()[0]       
+        return self.cursor.fetchone()[0]
 
     # # What is the highest track? -> Track
     def highest_track(self) -> Track:
@@ -36,21 +36,29 @@ class Reporter:
         self.cursor.execute("SELECT * FROM events ORDER BY duration ASC LIMIT 1")
         shortest = self.cursor.fetchone()
 
-        longest_event = Event(longest[0], longest[1], longest[2], longest[3], longest[4], longest[5], longest[6], longest[7], longest[8])
-        shortest_event = Event(shortest[0], shortest[1], shortest[2], shortest[3], shortest[4], shortest[5], shortest[6], shortest[7], shortest[8])
+        longest_event = Event(longest[0], longest[1], longest[2], longest[3],
+                              longest[4], longest[5], longest[6], longest[7], longest[8])
+        shortest_event = Event(shortest[0], shortest[1], shortest[2], shortest[3], shortest[4],
+                               shortest[5], shortest[6], shortest[7], shortest[8])
         return (longest_event, shortest_event)
 
     # Which event has the most laps for the given track_id -> tuple[Event+, ...]
     def events_with_most_laps_for_track(self, track_id: int) -> tuple[Event, ...]:
         # SELECT * FROM events WHERE track_id = 41 AND laps = (SELECT MAX(laps) FROM events WHERE track_id = 41)
-        self.cursor.execute("SELECT * FROM events WHERE track_id = ? AND laps = (SELECT MAX(laps) FROM events WHERE track_id = ?)", (track_id, track_id))
+        self.cursor.execute("SELECT * FROM events "
+                            "WHERE track_id = ? "
+                            "AND laps = (SELECT MAX(laps) "
+                            "FROM events "
+                            "WHERE track_id = ?) ",
+                            (track_id, track_id))
         event = self.cursor.fetchall()
         if event is None:
             # dit betekent dat er geen resultaat is voor het gegeven track_id
             return ()
         answer = ()
-        for i in event:
-            answer += (Event(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]),)
+        for eventitem in event:
+            answer += (Event(eventitem[0], eventitem[1], eventitem[2], eventitem[3],
+                             eventitem[4], eventitem[5], eventitem[6], eventitem[7], eventitem[8]),)
         return (answer)
 
     # Which skaters have made the most events -> tuple[Skater, ...]
@@ -61,14 +69,27 @@ class Reporter:
         # if only_wins is True, we need to check if the skater has won the event.
         # join the event_skaters table with the events table, and check if the skater is the winner
         if only_wins:
-            self.cursor.execute("SELECT skater_id, COUNT(*) FROM event_skaters JOIN events ON event_skaters.event_id = events.id WHERE skater_id = winner GROUP BY skater_id ORDER BY COUNT(*) DESC LIMIT 1")
+            self.cursor.execute("SELECT skater_id, COUNT(*) "
+                                "FROM event_skaters "
+                                "JOIN events ON event_skaters.event_id = events.id "
+                                "WHERE skater_id = winner "
+                                "GROUP BY skater_id "
+                                "ORDER BY COUNT(*) "
+                                "DESC "
+                                "LIMIT 1")
+
             skater_id = self.cursor.fetchone()[0]
             if skater_id is None:
                 # Geen resultaat gevonden
                 return ()
 
         else:
-            self.cursor.execute("SELECT skater_id, COUNT(*) FROM event_skaters GROUP BY skater_id ORDER BY COUNT(*) DESC LIMIT 1")
+            self.cursor.execute("SELECT skater_id, COUNT(*) "
+                                "FROM event_skaters "
+                                "GROUP BY skater_id "
+                                "ORDER BY COUNT(*) "
+                                "DESC "
+                                "LIMIT 1")
             skater_id = self.cursor.fetchone()[0]
             if skater_id is None:
                 # Geen resultaat gevonden
@@ -81,7 +102,12 @@ class Reporter:
 
     def tracks_with_most_events(self) -> tuple[Track, ...]:
         # count most occurences of a track in the events table
-        self.cursor.execute("SELECT track_id, COUNT(*) FROM events GROUP BY track_id ORDER BY COUNT(*) DESC LIMIT 1")
+        self.cursor.execute("SELECT track_id, COUNT(*) "
+                            "FROM events "
+                            "GROUP BY track_id "
+                            "ORDER BY COUNT(*) "
+                            "DESC "
+                            "LIMIT 1")
         track_id = self.cursor.fetchone()[0]
         if track_id is None:
             # Geen resultaat gevonden
@@ -97,13 +123,23 @@ class Reporter:
         # browse events table, sort by date, return first result
         # to check outdoor, join tracks table and check if outdoor is true
         if outdoor_only:
-            # SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude FROM tracks JOIN events ON tracks.id = events.track_id WHERE tracks.outdoor = 1 ORDER BY date ASC LIMIT 1
-            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude FROM tracks JOIN events ON tracks.id = events.track_id WHERE tracks.outdoor = 1 ORDER BY date ASC LIMIT 1")
+            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude "
+                                "FROM tracks "
+                                "JOIN events ON tracks.id = events.track_id "
+                                "WHERE tracks.outdoor = 1 "
+                                "ORDER BY date "
+                                "ASC "
+                                "LIMIT 1")
             track = self.cursor.fetchone()
         # join hier ook trak ig
         else:
-            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude FROM tracks JOIN events ON tracks.id = events.track_id ORDER BY date ASC LIMIT 1")
-            track = self.cursor.fetchone() 
+            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude "
+                                "FROM tracks "
+                                "JOIN events ON tracks.id = events.track_id "
+                                "ORDER BY date "
+                                "ASC "
+                                "LIMIT 1")
+            track = self.cursor.fetchone()
 
             # dit moet track worden
         answer = Track(track[0], track[1], track[2], track[3], track[4], track[5])
@@ -113,12 +149,22 @@ class Reporter:
     # Which track had the latetstoutdoor event? -> event
     def get_latest_event(self, outdoor_only: bool = False) -> Event:
         # vorige functie maar dan andersom
-        #join trackss
+        # join tracks
         if outdoor_only:
-            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude FROM tracks JOIN events ON tracks.id = events.track_id WHERE tracks.outdoor = 1 ORDER BY date DESC LIMIT 1")
+            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude "
+                                "FROM tracks JOIN events ON tracks.id = events.track_id "
+                                "WHERE tracks.outdoor = 1 "
+                                "ORDER BY date "
+                                "DESC "
+                                "LIMIT 1")
             track = self.cursor.fetchone()
         else:
-            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude FROM tracks JOIN events ON tracks.id = events.track_id ORDER BY date DESC LIMIT 1")
+            self.cursor.execute("SELECT tracks.id, tracks.name, tracks.city, tracks.country, tracks.outdoor, tracks.altitude "
+                                "FROM tracks "
+                                "JOIN events ON tracks.id = events.track_id "
+                                "ORDER BY date "
+                                "DESC "
+                                "LIMIT 1")
             track = self.cursor.fetchone()
             # dit moet track worden
 
@@ -132,23 +178,47 @@ class Reporter:
     # otherwise it should just return the value as tuple(Skater, ...)
     # CSV example (this are also the headers):
     #   id, first_name, last_name, nationality, gender, date_of_birth
-    def get_skaters_that_skated_track_between(self, track: Track, start: datetime, end: datetime, to_csv: bool = False) -> tuple[Skater, ...]:
-        print("date :", start, end)
-        # deze query werkt niet op codegrade, maar wel op het gegeven json bestand. Dus andere oplossing(dommere) nodig
-        # self.cursor.execute("SELECT skaters.id, skaters.first_name, skaters.last_name, skaters.nationality, skaters.gender, skaters.date_of_birth, events.date FROM skaters JOIN event_skaters on skaters.id = event_skaters.skater_id JOIN events on event_skaters.event_id = events.id WHERE events.track_id = ? AND events.date >= ? AND events.date <= ?", (track.id, start, end))
-        # skaters = self.cursor.fetchall()
-        # answer = ()
-        # for skater in skaters:
-        #     answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
-        answer = ()
 
-        self.cursor.execute("SELECT id FROM events WHERE track_id = ? AND date >= ? AND date <= ?", (track.id, start, end))
-        eventids = self.cursor.fetchall()
-        for eventid in eventids:
-            self.cursor.execute("SELECT * FROM skaters JOIN event_skaters on skaters.id = event_skaters.skater_id JOIN events on event_skaters.event_id = events.id WHERE events.id = ?", (eventid[0],))
-            skaters = self.cursor.fetchall()
+    def get_skaters_that_skated_track_between(self, track: Track,
+                                              start: datetime, end: datetime, to_csv: bool = False) -> tuple[Skater, ...]:
+        # deze query werkt niet op codegrade, maar wel op het gegeven json bestand. Dus andere oplossing(dommere) nodig
+        print(start, end)
+        # newstart = start.split(start, ' ')
+        start = start.strftime("%Y-%m-%d")
+        end = end.strftime("%Y-%m-%d")
+        self.cursor.execute("SELECT skaters.id, skaters.first_name, skaters.last_name, skaters.nationality, "
+                            "skaters.gender, skaters.date_of_birth, events.date "
+                            "FROM skaters "
+                            "JOIN event_skaters on skaters.id = event_skaters.skater_id "
+                            "JOIN events on event_skaters.event_id = events.id "
+                            "WHERE events.track_id = ? AND events.date BETWEEN ? AND ? "
+                            "ORDER BY skater_id", (track.id, start, end))
+        skaters = self.cursor.fetchall()
+        answer = ()
+        for skater in skaters:
+            answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+        # answer = ()
+        # self.cursor.execute("SELECT id FROM events WHERE track_id = ? AND date >= ? AND date <= ?", (track.id, start, end))
+        # eventids = self.cursor.fetchall()
+        # for eventid in eventids:
+        #     self.cursor.execute("SELECT * FROM skaters "
+        #                         "JOIN event_skaters on skaters.id = event_skaters.skater_id "
+        #                         "JOIN events on event_skaters.event_id = events.id "
+        #                         "WHERE events.id = ?", (eventid[0],))
+        #     skaters = self.cursor.fetchall()
+        #     for skater in skaters:
+        #         answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+        if not to_csv:
+            return answer
+
+        filename = f"Skaters on Track {track.name} between {start} and {end}.csv"
+
+        with open(f"{filename}", 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(['id', 'first_name', 'last_name', 'nationality', 'gender', 'date_of_birth'])
             for skater in skaters:
-                answer += (Skater(skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]),)
+                writer.writerow([skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]])
 
         return answer
 
@@ -162,7 +232,6 @@ class Reporter:
         self.cursor.execute("SELECT * FROM tracks WHERE country = ?", (country,))
         tracks = self.cursor.fetchall()
         answer = ()
-
         for track in tracks:
             answer += (Track(track[0], track[1], track[2], track[3], track[4], track[5]),)
 
@@ -172,14 +241,13 @@ class Reporter:
 
         with open(f"{filename}", 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',',
-                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
             writer.writerow(['id', 'name', 'city', 'country', 'outdoor', 'altitude'])
             for track in tracks:
                 writer.writerow([track[0], track[1], track[2], track[3], track[4], track[5]])
 
         return answer
-
 
     # Which skaters have nationality X? -> tuple[Skater, ...]
     # Based on given parameter `to_csv = True` should generate CSV file as  `Skaters with nationality X.csv`
@@ -188,7 +256,7 @@ class Reporter:
     # CSV example (this are also the headers):
     #   id, first_name, last_name, nationality, gender, date_of_birth
     def get_skaters_with_nationality(self, nationality: str, to_csv: bool = False) -> tuple[Skater, ...]:
-        self.cursor.execute("SELECT * FROM skaters WHERE nationality = ?",(nationality,))
+        self.cursor.execute("SELECT * FROM skaters WHERE nationality = ?", (nationality,))
         skaters = self.cursor.fetchall()
         answer = ()
         for skater in skaters:
@@ -200,8 +268,8 @@ class Reporter:
 
         with open(f"{filename}", 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',',
-                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
             writer.writerow(['id', 'first_name', 'last_name', 'nationality', 'gender', 'date_of_birth'])
             for skater in skaters:
                 writer.writerow([skater[0], skater[1], skater[2], skater[3], skater[4], skater[5]])
@@ -219,15 +287,15 @@ def main():
     # print(testing.tracks_with_most_events())
     # print(testing.get_first_event())
     # print(testing.get_latest_event())
-    # print(testing.get_skaters_that_skated_track_between())
-    print(testing.get_tracks_in_country("NOR", True))
+    # # print(testing.get_skaters_that_skated_track_between())
+    # print(testing.get_tracks_in_country("NOR", True))
     # print(testing.get_skaters_with_nationality("SWE", True))
-    # tracks = testing.tracks_with_most_events()
-    # # print(tracks[0])
-    # fdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
-    # tdate = datetime.strptime("2011-11-20", "%Y-%m-%d")
-    
-    # print(testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate))
+    tracks = testing.tracks_with_most_events()
+    # print(tracks[0])
+    fdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
+    tdate = datetime.strptime("2011-11-19", "%Y-%m-%d")
+    print(tracks[0])
+    print(testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate, True))
     # testing.get_skaters_that_skated_track_between(tracks[0], fdate, tdate)
     # print(testing.get_tracks_in_country("NOR"))
 

@@ -1,3 +1,8 @@
+import os
+import sys
+import sqlite3
+
+
 class Track:
 
     def __init__(self, id=1, name="", city="", country="", outdoor=False, altitude=0) -> None:
@@ -7,9 +12,13 @@ class Track:
         self.country = country
         self.outdoor = outdoor
         self.altitude = altitude
-        
-    def get_events() -> list:
-        pass
+
+    def get_events(self) -> list:
+        con = sqlite3.connect(os.path.join(sys.path[0], 'iceskatingapp.db'))
+        cursor = con.cursor()
+        cursor.execute("SELECT * FROM events WHERE track_id = ?", (self.id,))
+        events = cursor.fetchall()
+        return events
 
     # Representation method
     # This will format the output in the correct order

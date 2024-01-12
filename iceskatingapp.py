@@ -12,14 +12,17 @@ def sync_skaters(cur, json_data):
     # the json is structed like : events -> results -> skater
     # so we need to loop trough the events, then trough the results, and then trough the skaters
     for event in json_data:
-        for result in event["results"]:
-            skater_dict[result["skater"]["id"]] = result["skater"]
- 
+        for event_result in event["results"]:
+            skater_dict[event_result["skater"]["id"]] = event_result["skater"]
+
     # now all the data is in the skater_dict, so we can loop trough it and insert it into the database
     sqltuples = []
 
     for skaterid in skater_dict:
-        inserttuple = (skater_dict[skaterid]["id"], skater_dict[skaterid]["firstName"], skater_dict[skaterid]["lastName"], skater_dict[skaterid]["country"], skater_dict[skaterid]["gender"], skater_dict[skaterid]["dateOfBirth"])
+        inserttuple = (skater_dict[skaterid]["id"], skater_dict[skaterid]["firstName"],
+                       skater_dict[skaterid]["lastName"], skater_dict[skaterid]["country"],
+                       skater_dict[skaterid]["gender"], skater_dict[skaterid]["dateOfBirth"])
+
         sqltuples.append(inserttuple)
 
     cur.executemany("INSERT INTO skaters VALUES(?,?,?,?,?,?)", sqltuples)
@@ -34,7 +37,10 @@ def sync_tracks(cur, json_data):
     sql_tuples = []
 
     for trackid in track_dict:
-        inserttuple = (track_dict[trackid]["id"], track_dict[trackid]["name"], track_dict[trackid]["city"], track_dict[trackid]["country"], track_dict[trackid]["isOutdoor"], track_dict[trackid]["altitude"])
+        inserttuple = (track_dict[trackid]["id"], track_dict[trackid]["name"], track_dict[trackid]["city"],
+                       track_dict[trackid]["country"], track_dict[trackid]["isOutdoor"],
+                       track_dict[trackid]["altitude"])
+
         sql_tuples.append(inserttuple)
 
     cur.executemany("INSERT INTO tracks VALUES(?,?,?,?,?,?)", sql_tuples)
@@ -60,26 +66,29 @@ def sync_events(cur, json_data):
             newtime = float(newtime[1]) + amountofsecond_added
             event_dict[eventid]["results"][0]["time"] = newtime
 
-        inserttuple = (event_dict[eventid]["id"], event_dict[eventid]["title"], event_dict[eventid]["track"]["id"], event_dict[eventid]["start"], 
-                        event_dict[eventid]["distance"]["distance"], event_dict[eventid]["results"][0]["time"], event_dict[eventid]["distance"]["lapCount"],
-                        event_dict[eventid]["results"][0]["skater"]["id"], event_dict[eventid]["category"])
+        inserttuple = (event_dict[eventid]["id"], event_dict[eventid]["title"],
+                       event_dict[eventid]["track"]["id"], event_dict[eventid]["start"],
+                       event_dict[eventid]["distance"]["distance"], event_dict[eventid]["results"][0]["time"],
+                       event_dict[eventid]["distance"]["lapCount"],
+                       event_dict[eventid]["results"][0]["skater"]["id"], event_dict[eventid]["category"])
+
         sql_tuples.append(inserttuple)
     cur.executemany("INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?)", sql_tuples)
 
 
 def sync_event_skaters(cur, json_data):
     event_dict = {}
-    for event in json_data:
-        event_dict[event["id"]] = event
+    for event_data in json_data:
+        event_dict[event_data["id"]] = event_data
 
     sql_tuples = []
 
     placeholder_pk = 0
     for eventid in event_dict:
         tempeventid = eventid
-        for result in event_dict[eventid]["results"]:
+        for event_result in event_dict[eventid]["results"]:
             placeholder_pk += 1
-            sql_tuples.append((placeholder_pk, tempeventid, result["skater"]["id"]))
+            sql_tuples.append((placeholder_pk, tempeventid, event_result["skater"]["id"]))
 
     cur.executemany("INSERT INTO event_skaters VALUES(?,?,?)", sql_tuples)
 
@@ -144,8 +153,9 @@ if __name__ == "__main__":
     cur, con = main()
     # first process the data from events.json
     # then give the data as parameters to the sync functions
-    json_data = open('events.json')
-    json_data = json.load(json_data)
+    json_read = open('events.json')
+    json_data = json.load(json_read)
+    json_read.close()
 
     sync_skaters(cur, json_data)
     sync_tracks(cur, json_data)
